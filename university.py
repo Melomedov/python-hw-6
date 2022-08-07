@@ -11,10 +11,13 @@
 Також потрібно реалізувати до кожного класу метод  def __str__(self):
 """
 
+
 from datetime import date, datetime
 from abc import ABC, abstractmethod
+from itertools import count
+from multiprocessing.reduction import duplicate
 from typing import List
-
+import os.path
 
 class Person:
     """Клас Person який обʼєднує в собі базові атрибути кожній людині."""
@@ -50,6 +53,10 @@ class Course:
         self.end_date = end_date
 
     def is_active(self) -> bool:
+        current_time = datetime.now()
+        if self.start_date <= current_time < self.end_date:
+            return True
+        else: return False 
         """Повертає True або False в залежності від тогу чи курс активний чи ні.
         Активний курс це той який проходить в данний момент тобто start_date < NOW < end_date.
         TODO розробити!
@@ -71,6 +78,8 @@ class UniversityEmployee(Person, ABC):
         self.monthly_salary = salary
 
     def get_yearly_salary(self):
+        year_salary = self.monthly_salary * 12
+        return year_salary
         """Метод який повертає річну зарплату працівника.
         Розраховувати річну зарплату потрібно за місячною ЗП (атрибут monthly_salary).
         TODO розробити!
@@ -78,6 +87,7 @@ class UniversityEmployee(Person, ABC):
 
     @abstractmethod
     def answer_question(self, course: Course, question: str) -> bool:
+    
         """Метод який викликається коли студент задає питання по навчанню.
         Якщо працівник може відповісти на питання метод повертає True,
         якщо ж працівник не може відповісти метод повертає False.
@@ -108,21 +118,34 @@ class Teacher(UniversityEmployee):
         self.course = course
 
     def answer_question(self, course: Course, question: str) -> bool:
+        
+        if Course.is_active(course) == True and self.course == course: 
+            questionList = (question)
+            return True
+        else: return False
+       
         """Метод який викликається коли студент задає питання по навчанню.
         Якщо працівник може відповісти на питання метод повертає True,
         якщо ж працівник не може відповісти метод повертає False.
 
-        Вчитель є дуже розумним, тому може відповісти на будь яке запитання (в незалежності від того що було передано в аргументі question).
-        Але вчитель не може відповісти на запитання яке не стосується того курсу який він проводить в данний момент (атрибут course).
+        Вчитель є дуже розумним, тому може відповісти на будь яке запитання 
+        (в незалежності від того що було передано в аргументі question).
+        Але вчитель не може відповісти на запитання яке не стосується того
+         курсу який він проводить в данний момент 
+        (атрибут course).
         Також вчитель принципово не відповідає на запитання по курсу який не є активним.
         Тобто якщо у вчителя курс який він проводить закічився (not is_active()) то вчитель не відповідє на запитання.
-
         TODO розробити!
         """
 
     def change_course(self, course: Course) -> bool:
+        if Course.is_active(course) ==True and self.course != course:
+            self.course = course
+            return True
+        else: return False
         """Метод який призначений для того щоб призначати викладачу новий курс.
-        Курс може бути призначений тільки якщо новий курс активний, тобто розпочався і не закінчився (див. метод Course.is_active).
+        Курс може бути призначений тільки якщо новий курс активний, тобто розпочався і не закінчився
+        (див. метод Course.is_active).
         Якщо курс був успішно оновлений метод повертає True, в іншому випадку False.
         TODO розробити!
         """
@@ -148,8 +171,24 @@ class Mentor(UniversityEmployee):
     ):
         super().__init__(first_name, last_name, birth_date, salary)
         self.courses = courses
+    list_question = []
 
     def answer_question(self, course: Course, question: str) -> bool:
+        number_of_courses = len(self.courses)
+        self.list_question.append(question.lower)
+        for item in self.courses:
+            if Course.is_active(item) == True :
+                if  self.list_question.count(question.lower) > 1:
+                    return True
+                else:
+                    for answer in self.list_question:
+                        if len(self.list_question) % number_of_courses == 0:
+                            print(self.list_question.count(answer))
+                            return True
+                        else: 
+                            print(self.list_question.count(answer))
+                            return False
+
         """Метод який викликається коли студент задає питання по навчанню.
         Якщо працівник може відповісти на питання метод повертає True,
         якщо ж працівник не може відповісти метод повертає False.
@@ -200,6 +239,11 @@ class Mentor(UniversityEmployee):
         """
 
     def change_courses(self, courses: List[Course]) -> bool:
+        for item in courses:
+            if Course.is_active(item) ==True and self.courses.count(item) == 0:
+                self.courses.append(item)
+                return True
+            else: return False
         """Метод який призначений для того щоб призначати ментори нові курси.
         Курс може бути призначений тільки якщо новий курс активний, тобто розпочався і не закінчився (див. метод Course.is_active).
         Якщо всі курси були успішно призначені метод повертає True, в іншому випадку False.
@@ -209,13 +253,27 @@ class Mentor(UniversityEmployee):
         """
 
 
+
 class Student(Person):
     """Клас Student який відповідає за студента університету.
     Наслідується від класу Person.
     Можна додавати додаткові атрибути для внутрішньої логіки.
-    """
-
+    """              
+    
+    
     def add_mark(self, mark: int):
+        if os.path.exists(f'{self.last_name}.txt') == True:
+            Student_marks_file = open(f'{self.last_name}.txt', "a")
+        else:
+            Student_marks_file = open(f'{self.last_name}.txt', "w")
+        
+        if mark >= 1 and mark <= 12:
+            Student_marks_file.write(f'{str(mark)}\n')
+        else:
+            print("Оценка должна  быть от 1 до 12")
+        Student_marks_file.close
+
+          
         """Метод який використовується вчителем коли той ставить оцінку стунденту.
         Оцінка не залежить від предмету. Потрібно зберігати всі оцінки які коли небудь були додані.
         Мінімальна оцінка: 1
@@ -225,12 +283,22 @@ class Student(Person):
         """
 
     def get_all_marks(self) -> List[int]:
+        with open(f'{self.last_name}.txt') as file:
+            all_marks = file.read().splitlines()
+            all_marks = list(map(int,all_marks))
+        return all_marks
         """Метод який використовується вчителем коли той ставить оцінку стунденту.
         Оцінка не залежить від предмету. Потрібно зберігати всі оцінки які коли неьудь були додані.
         TODO розробити!
         """
 
     def get_avarage_mark(self) -> float:
+        all_marks = self.get_all_marks()
+        summ_marks = 0
+        for x in all_marks:
+            summ_marks += x
+        avarege_mark = summ_marks / len(all_marks)
+        return round(avarege_mark, 1)
         """Метод який повертає середню оцінку студенту по всіх наданих студенту оцінках.
         Наприклад, студент має наступні оцінки [2, 10, 3]
         якшо викликати функцію то результат повинен бути 5,
@@ -239,6 +307,16 @@ class Student(Person):
         """
 
     def get_average_by_last_n_marks(self, n: int) -> float:
+        all_marks = self.get_all_marks()
+        try:
+            last_n_mark = all_marks[-n:]
+        except:
+            print(" Или большой срез или недомтаточно оценок")
+        summ_last_n_mark = 0
+        for x in last_n_mark:
+            summ_last_n_mark += x
+        average_last_n_mark = summ_last_n_mark / len(last_n_mark)
+        return round(average_last_n_mark, 1)
         """Метод який повертає середню оцінку за певною кількістю останніх оцінок.
         Наприклад, студент має наступні оцінки: [2, 10, 3, 6, 8, 7],
         якшо викликати функцію з аргументом n=2 то результат повинен бути 6,
@@ -282,17 +360,32 @@ class University:
         self.students = students
 
     def get_average_salary(self) -> float:
+        summ_person_salary = 0
+        for x in range (len(self.employees)):
+            summ_person_salary += self.employees[x].monthly_salary
+        averagy_salary = summ_person_salary / len(self.employees)
+        return round(averagy_salary,1)
         """Метод який розраховує і повертає середню місячну зарплату працівників університету.
         TODO розробити!
         """
 
-    def get_average_mark(self) -> float:
-        """Метод який розраховує і повертає середню оцінку всіх студентів університету.
+    def get_average_marks(self) -> float:
+        summ_students_average_marks = 0
+        for x in range (len(self.students)):
+            summ_students_average_marks += self.students[x].get_avarage_mark()
+        average_student_marks = summ_students_average_marks / len(self.students)
+        return round (average_student_marks, 1)
+    """Метод який розраховує і повертає середню оцінку всіх студентів університету.
         Для цього потрібно враховувати середню оцінку кожно студента.
         TODO розробити!
         """
 
     def get_active_courses(self) -> List[Course]:
+        activ_course = []
+        for x in range (len(self.courses)):
+            if self.courses[x].is_active() == True:
+                activ_course.append(self.courses[x].name)
+        return activ_course
         """Метод повертає всі активні (в данний момент) курси (Course.is_active()).
         TODO розробити!
         """
