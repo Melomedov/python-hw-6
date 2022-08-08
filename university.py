@@ -11,7 +11,7 @@
 Також потрібно реалізувати до кожного класу метод  def __str__(self):
 """
 
-
+import datetime 
 from datetime import date, datetime
 from abc import ABC, abstractmethod
 from itertools import count
@@ -262,13 +262,14 @@ class Student(Person):
     
     
     def add_mark(self, mark: int):
+        data_today = datetime.now().strftime("%Y-%m-%d")
         if os.path.exists(f'{self.last_name}.txt') == True:
             Student_marks_file = open(f'{self.last_name}.txt', "a")
         else:
             Student_marks_file = open(f'{self.last_name}.txt', "w")
-        
+        datetime.now().strftime('%m-%d-%Y')
         if mark >= 1 and mark <= 12:
-            Student_marks_file.write(f'{str(mark)}\n')
+            Student_marks_file.write(f'{str(mark)}' + ' ' +f'{data_today}\n' )
         else:
             print("Оценка должна  быть от 1 до 12")
         Student_marks_file.close
@@ -284,8 +285,13 @@ class Student(Person):
 
     def get_all_marks(self) -> List[int]:
         with open(f'{self.last_name}.txt') as file:
-            all_marks = file.read().splitlines()
-            all_marks = list(map(int,all_marks))
+            read_line = file.read().splitlines()
+            # all_marks = list(map(int,all_marks))
+        all_marks = []
+        for x in range(len(read_line)):
+            all_marks_temp = read_line[x].split()    
+            all_marks.append(all_marks_temp[0])
+        all_marks = list(map(int,all_marks))
         return all_marks
         """Метод який використовується вчителем коли той ставить оцінку стунденту.
         Оцінка не залежить від предмету. Потрібно зберігати всі оцінки які коли неьудь були додані.
@@ -327,6 +333,27 @@ class Student(Person):
         """
 
     def get_average_from_date(self, from_date: datetime) -> float:
+        date_option = "%Y-%m-%d"
+        with open(f'{self.last_name}.txt') as file:
+            read_line = file.read().splitlines()
+
+        all_marks_data = []
+        all_marks = []
+        summ_marks = 0
+        for x in range(len(read_line)):
+            all_marks_temp = read_line[x].split()
+            if datetime.strptime(all_marks_temp[1], date_option) >= from_date:
+                all_marks_data.append(all_marks_temp)
+        for x in range(len(all_marks_data)):
+            all_marks_temp = all_marks_data[x]
+            all_marks.append(all_marks_temp[0])
+        all_marks = list(map(int,all_marks))
+        
+        for x in all_marks:
+            summ_marks += x
+        avarege_mark = summ_marks / len(all_marks)
+        return round(avarege_mark, 1)
+    
         """Метод який повертає середню оцінку за певний період (від певної дати).
         Для того щоб реалізувати цей метод потрібно хберігати інформацію про те коли певна оцінка була додана.
         Наприклад, студент має наступні оцінки: [
